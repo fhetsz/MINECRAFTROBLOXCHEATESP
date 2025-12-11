@@ -1,247 +1,216 @@
 ---------------------------------------------------------
--- GUI + SETTINGS
+-- VARIABLES
 ---------------------------------------------------------
 
 local player = game.Players.LocalPlayer
 local guiParent = player:WaitForChild("PlayerGui")
+local ENTITIES = workspace:WaitForChild("Entities")
+
+local TARGET_IRON = "82164848622194"
+local TARGET_DIAMOND = "http://www.roblox.com/Thumbs/Asset.ashx?width=512&height=512&assetId=88662911730235"
+local TARGET_DIAMOND_ALT = "88662911730235"
+
+local ironOn, diamondOn, playerOn = false, false, false
+local highlights = {}
+
+---------------------------------------------------------
+-- HELPER FUNCTIONS
+---------------------------------------------------------
+
+local function applyHighlight(part, color, name)
+	if not part:FindFirstChild(name) then
+		local h = Instance.new("Highlight")
+		h.Name = name
+		h.FillTransparency = 0.1
+		h.OutlineTransparency = 0.5
+		h.FillColor = color
+		h.OutlineColor = color
+		h.Parent = part
+		table.insert(highlights, h)
+	end
+end
+
+local function clearAllHighlights()
+	for _, h in ipairs(highlights) do
+		if h and h.Parent then h:Destroy() end
+	end
+	highlights = {}
+	for _, child in ipairs(ENTITIES:GetChildren()) do
+		if child.Name == "playerhitbox" and child:IsA("BasePart") then
+			child.Transparency = 0
+		end
+	end
+end
+
+local function checkDecal(decal)
+	if not decal:IsA("Decal") then return end
+	local t = tostring(decal.Texture)
+	local p = decal.Parent
+	if not p or not p:IsA("BasePart") then return end
+
+	if ironOn and t:match(TARGET_IRON) then
+		applyHighlight(p, Color3.fromRGB(192,192,192), "DecalHighlight")
+	end
+	if diamondOn and (t:match(TARGET_DIAMOND) or t:match(TARGET_DIAMOND_ALT)) then
+		applyHighlight(p, Color3.fromRGB(0,0,255), "DecalHighlight")
+	end
+end
+
+local function setupPlayerHitbox(part)
+	if not playerOn then return end
+	if not part:IsA("BasePart") then return end
+	part.Transparency = 0.5
+	applyHighlight(part, Color3.fromRGB(0,255,255), "PlayerHighlight")
+
+	if not part:FindFirstChild("PlayerBillboard") then
+		local bb = Instance.new("BillboardGui")
+		bb.Name = "PlayerBillboard"
+		bb.Size = UDim2.new(0,60,0,20)
+		bb.AlwaysOnTop = true
+		bb.Parent = part
+
+		local label = Instance.new("TextLabel")
+		label.Size = UDim2.new(1,0,1,0)
+		label.BackgroundTransparency = 1
+		label.TextScaled = true
+		label.TextColor3 = Color3.new(1,1,1)
+		label.Text = "Player"
+		label.Parent = bb
+	end
+end
+
+---------------------------------------------------------
+-- INITIAL CHECK
+---------------------------------------------------------
+
+for _, obj in ipairs(workspace:GetDescendants()) do
+	checkDecal(obj)
+end
+
+for _, child in ipairs(ENTITIES:GetChildren()) do
+	if child.Name == "playerhitbox" then
+		setupPlayerHitbox(child)
+	end
+end
+
+---------------------------------------------------------
+-- EVENT CONNECTIONS
+---------------------------------------------------------
+
+workspace.DescendantAdded:Connect(function(obj)
+	checkDecal(obj)
+end)
+
+ENTITIES.ChildAdded:Connect(function(child)
+	if child.Name == "playerhitbox" then
+		setupPlayerHitbox(child)
+	end
+end)
+
+---------------------------------------------------------
+-- GUI
+---------------------------------------------------------
 
 local MinecraftUI = Instance.new("ScreenGui")
-MinecraftUI.Name = "MinecraftUI"
 MinecraftUI.IgnoreGuiInset = true
 MinecraftUI.ResetOnSpawn = false
 MinecraftUI.Parent = guiParent
 
----------------------------------------------------------
--- FRAME
----------------------------------------------------------
-
 local Frame = Instance.new("Frame")
 Frame.Parent = MinecraftUI
-Frame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-Frame.BorderSizePixel = 0
-Frame.Position = UDim2.new(0.046, 0, 0.115, 0)
-Frame.Size = UDim2.new(0.156, 0, 0.366, 0)
-
----------------------------------------------------------
--- BUTTONS + LABELS
----------------------------------------------------------
-
-local Iron = Instance.new("TextButton")
-Iron.Name = "Iron"
-Iron.Parent = Frame
-Iron.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-Iron.BorderSizePixel = 0
-Iron.Position = UDim2.new(0.061, 0, 0.054, 0)
-Iron.Size = UDim2.new(0.873, 0, 0.171, 0)
-Iron.Font = Enum.Font.SourceSans
-Iron.Text = "IronEsp: OFF"
-Iron.TextColor3 = Color3.new(0,0,0)
-Iron.TextScaled = true
-
-local Diamond = Instance.new("TextButton")
-Diamond.Name = "Diamond"
-Diamond.Parent = Frame
-Diamond.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-Diamond.BorderSizePixel = 0
-Diamond.Position = UDim2.new(0.061, 0, 0.262, 0)
-Diamond.Size = UDim2.new(0.873, 0, 0.171, 0)
-Diamond.Font = Enum.Font.SourceSans
-Diamond.Text = "DiamondEsp: OFF"
-Diamond.TextColor3 = Color3.new(0,0,0)
-Diamond.TextScaled = true
-
-local PlayerESP = Instance.new("TextButton")
-PlayerESP.Name = "Player"
-PlayerESP.Parent = Frame
-PlayerESP.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-PlayerESP.BorderSizePixel = 0
-PlayerESP.Position = UDim2.new(0.061, 0, 0.476, 0)
-PlayerESP.Size = UDim2.new(0.873, 0, 0.171, 0)
-PlayerESP.Font = Enum.Font.SourceSans
-PlayerESP.Text = "PlayerEsp: OFF"
-PlayerESP.TextColor3 = Color3.new(0,0,0)
-PlayerESP.TextScaled = true
-
-local Reset = Instance.new("TextButton")
-Reset.Name = "Reset"
-Reset.Parent = Frame
-Reset.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-Reset.BorderSizePixel = 0
-Reset.Position = UDim2.new(0.061, 0, 0.684, 0)
-Reset.Size = UDim2.new(0.873, 0, 0.174, 0)
-Reset.Font = Enum.Font.SourceSans
-Reset.Text = "Reset All Esp"
-Reset.TextColor3 = Color3.new(0,0,0)
-Reset.TextScaled = true
+Frame.BackgroundColor3 = Color3.fromRGB(0,0,0)
+Frame.Size = UDim2.new(0.156,0,0.366,0)
+Frame.Position = UDim2.new(0.046,0,0.115,0)
 
 local TextLabel = Instance.new("TextLabel")
 TextLabel.Parent = Frame
 TextLabel.BackgroundTransparency = 1
-TextLabel.Position = UDim2.new(0.061, 0, -0.195, 0)
-TextLabel.Size = UDim2.new(0.873, 0, 0.171, 0)
-TextLabel.Font = Enum.Font.SourceSans
 TextLabel.Text = "MINECRAFT"
-TextLabel.TextColor3 = Color3.fromRGB(0,255,21)
 TextLabel.TextScaled = true
+TextLabel.TextColor3 = Color3.fromRGB(0,255,21)
+TextLabel.Position = UDim2.new(0.061,0,-0.195,0)
+TextLabel.Size = UDim2.new(0.873,0,0.171,0)
 
-local TextLabel_2 = Instance.new("TextLabel")
-TextLabel_2.Parent = Frame
-TextLabel_2.BackgroundTransparency = 1
-TextLabel_2.Position = UDim2.new(0.528, 0, 0.917, 0)
-TextLabel_2.Size = UDim2.new(0.471, 0, 0.082, 0)
-TextLabel_2.Font = Enum.Font.SourceSans
-TextLabel_2.Text = "Fhetsz"
-TextLabel_2.TextColor3 = Color3.fromRGB(255, 0, 0)
-TextLabel_2.TextScaled = true
+local Fhetsz = Instance.new("TextLabel")
+Fhetsz.Parent = Frame
+Fhetsz.BackgroundTransparency = 1
+Fhetsz.Text = "Fhetsz"
+Fhetsz.TextScaled = true
+Fhetsz.TextColor3 = Color3.fromRGB(255,0,0)
+Fhetsz.Position = UDim2.new(0.528,0,0.917,0)
+Fhetsz.Size = UDim2.new(0.471,0,0.082,0)
 
----------------------------------------------------------
--- ESP VARIABLES
----------------------------------------------------------
-
-local ENTITIES = workspace:WaitForChild("Entities")
-
-local ironOn = false
-local diamondOn = false
-local playerOn = false
-
-local TARGET_IRON = "82164848622194"
-local TARGET_DIAMOND = "88662911730235"
-
----------------------------------------------------------
--- ESP FUNCTIONS
----------------------------------------------------------
-
-local function clearEsp()
-	for _, v in ipairs(workspace:GetDescendants()) do
-		if v.Name == "DecalHighlight" or v.Name == "PlayerHighlight" then
-			v:Destroy()
-		end
-		if v:IsA("BasePart") and v.Name == "playerhitbox" then
-			v.Transparency = 0
-		end
-	end
+local function createButton(name,text,pos)
+	local btn = Instance.new("TextButton")
+	btn.Name = name
+	btn.Parent = Frame
+	btn.BackgroundColor3 = Color3.fromRGB(255,0,0)
+	btn.BorderSizePixel = 0
+	btn.Position = pos
+	btn.Size = UDim2.new(0.873,0,0.171,0)
+	btn.Font = Enum.Font.SourceSans
+	btn.Text = text
+	btn.TextColor3 = Color3.new(0,0,0)
+	btn.TextScaled = true
+	return btn
 end
 
-local function highlight(part, color, name)
-	if part:FindFirstChild(name) then return end
-	local h = Instance.new("Highlight")
-	h.Name = name
-	h.FillTransparency = 0.1
-	h.OutlineTransparency = 0.5
-	h.FillColor = color
-	h.OutlineColor = color
-	h.Parent = part
-end
-
-local function checkDecal(obj)
-	if not obj:IsA("Decal") then return end
-	local t = tostring(obj.Texture)
-	local p = obj.Parent
-	if not p or not p:IsA("BasePart") then return end
-
-	if ironOn and t:match(TARGET_IRON) then
-		highlight(p, Color3.fromRGB(192,192,192), "DecalHighlight")
-	end
-
-	if diamondOn and t:match(TARGET_DIAMOND) then
-		highlight(p, Color3.new(0,0,1), "DecalHighlight")
-	end
-end
-
-local function checkPlayer(obj)
-	if obj.Name == "playerhitbox" and obj:IsA("BasePart") then
-		if not playerOn then return end
-
-		obj.Transparency = 0.5
-		highlight(obj, Color3.fromRGB(0,255,255), "PlayerHighlight")
-
-		if not obj:FindFirstChild("PlayerBillboard") then
-			local bb = Instance.new("BillboardGui")
-			bb.Name = "PlayerBillboard"
-			bb.Parent = obj
-			bb.Size = UDim2.new(0,60,0,20)
-			bb.AlwaysOnTop = true
-
-			local txt = Instance.new("TextLabel")
-			txt.Parent = bb
-			txt.Size = UDim2.new(1,0,1,0)
-			txt.BackgroundTransparency = 1
-			txt.TextScaled = true
-			txt.TextColor3 = Color3.new(1,1,1)
-			txt.Text = "Player"
-		end
-	end
-end
-
-workspace.DescendantAdded:Connect(function(o)
-	checkDecal(o)
-	checkPlayer(o)
-end)
-
-ENTITIES.ChildAdded:Connect(function(o)
-	checkPlayer(o)
-end)
+local IronBtn = createButton("Iron","IronEsp: OFF",UDim2.new(0.061,0,0.054,0))
+local DiamondBtn = createButton("Diamond","DiamondEsp: OFF",UDim2.new(0.061,0,0.262,0))
+local PlayerBtn = createButton("Player","PlayerEsp: OFF",UDim2.new(0.061,0,0.476,0))
+local ResetBtn = createButton("Reset","Reset All Esp",UDim2.new(0.061,0,0.684,0))
+ResetBtn.BackgroundColor3 = Color3.fromRGB(255,255,255)
 
 ---------------------------------------------------------
--- BUTTON FUNCTIONS
+-- BUTTON LOGIC
 ---------------------------------------------------------
 
-Iron.MouseButton1Click:Connect(function()
+IronBtn.MouseButton1Click:Connect(function()
 	ironOn = not ironOn
-	Iron.BackgroundColor3 = ironOn and Color3.fromRGB(0,255,0) or Color3.fromRGB(255,0,0)
-	Iron.Text = ironOn and "IronEsp: ON" or "IronEsp: OFF"
-
+	IronBtn.Text = ironOn and "IronEsp: ON" or "IronEsp: OFF"
+	IronBtn.BackgroundColor3 = ironOn and Color3.fromRGB(0,255,0) or Color3.fromRGB(255,0,0)
 	if ironOn then
-		for _, v in ipairs(workspace:GetDescendants()) do
-			checkDecal(v)
-		end
+		for _, v in ipairs(workspace:GetDescendants()) do checkDecal(v) end
 	else
-		clearEsp()
+		clearAllHighlights()
 	end
 end)
 
-Diamond.MouseButton1Click:Connect(function()
+DiamondBtn.MouseButton1Click:Connect(function()
 	diamondOn = not diamondOn
-	Diamond.BackgroundColor3 = diamondOn and Color3.fromRGB(0,255,0) or Color3.fromRGB(255,0,0)
-	Diamond.Text = diamondOn and "DiamondEsp: ON" or "DiamondEsp: OFF"
-
+	DiamondBtn.Text = diamondOn and "DiamondEsp: ON" or "DiamondEsp: OFF"
+	DiamondBtn.BackgroundColor3 = diamondOn and Color3.fromRGB(0,255,0) or Color3.fromRGB(255,0,0)
 	if diamondOn then
-		for _, v in ipairs(workspace:GetDescendants()) do
-			checkDecal(v)
-		end
+		for _, v in ipairs(workspace:GetDescendants()) do checkDecal(v) end
 	else
-		clearEsp()
+		clearAllHighlights()
 	end
 end)
 
-PlayerESP.MouseButton1Click:Connect(function()
+PlayerBtn.MouseButton1Click:Connect(function()
 	playerOn = not playerOn
-	PlayerESP.BackgroundColor3 = playerOn and Color3.fromRGB(0,255,0) or Color3.fromRGB(255,0,0)
-	PlayerESP.Text = playerOn and "PlayerEsp: ON" or "PlayerEsp: OFF"
-
+	PlayerBtn.Text = playerOn and "PlayerEsp: ON" or "PlayerEsp: OFF"
+	PlayerBtn.BackgroundColor3 = playerOn and Color3.fromRGB(0,255,0) or Color3.fromRGB(255,0,0)
 	if playerOn then
-		for _, v in ipairs(ENTITIES:GetChildren()) do
-			checkPlayer(v)
+		for _, child in ipairs(ENTITIES:GetChildren()) do
+			if child.Name == "playerhitbox" then setupPlayerHitbox(child) end
 		end
 	else
-		clearEsp()
+		clearAllHighlights()
 	end
 end)
 
-Reset.MouseButton1Click:Connect(function()
+ResetBtn.MouseButton1Click:Connect(function()
 	ironOn = false
 	diamondOn = false
 	playerOn = false
-
-	Iron.Text = "IronEsp: OFF"
-	Diamond.Text = "DiamondEsp: OFF"
-	PlayerESP.Text = "PlayerEsp: OFF"
-
-	Iron.BackgroundColor3 = Color3.fromRGB(255,0,0)
-	Diamond.BackgroundColor3 = Color3.fromRGB(255,0,0)
-	PlayerESP.BackgroundColor3 = Color3.fromRGB(255,0,0)
-
-	clearEsp()
+	IronBtn.Text = "IronEsp: OFF"
+	IronBtn.BackgroundColor3 = Color3.fromRGB(255,0,0)
+	DiamondBtn.Text = "DiamondEsp: OFF"
+	DiamondBtn.BackgroundColor3 = Color3.fromRGB(255,0,0)
+	PlayerBtn.Text = "PlayerEsp: OFF"
+	PlayerBtn.BackgroundColor3 = Color3.fromRGB(255,0,0)
+	clearAllHighlights()
 end)
 
 ---------------------------------------------------------
@@ -249,22 +218,16 @@ end)
 ---------------------------------------------------------
 
 local UIS = game:GetService("UserInputService")
-
-local dragging
-local dragStart
-local startPos
+local dragging, dragStart, startPos
 
 local function clampFrame(pos)
 	local scrX = MinecraftUI.AbsoluteSize.X
 	local scrY = MinecraftUI.AbsoluteSize.Y
-	
 	local frameX = Frame.AbsoluteSize.X
 	local frameY = Frame.AbsoluteSize.Y
-
-	local x = math.clamp(pos.X, 0, scrX - frameX)
-	local y = math.clamp(pos.Y, 0, scrY - frameY)
-
-	return UDim2.fromOffset(x, y)
+	local x = math.clamp(pos.X,0,scrX-frameX)
+	local y = math.clamp(pos.Y,0,scrY-frameY)
+	return UDim2.fromOffset(x,y)
 end
 
 Frame.InputBegan:Connect(function(input)
@@ -284,13 +247,11 @@ end)
 UIS.InputChanged:Connect(function(input)
 	if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
 		local delta = input.Position - dragStart
-		local newPos = UDim2.new(
+		Frame.Position = clampFrame(UDim2.new(
 			startPos.X.Scale,
 			startPos.X.Offset + delta.X,
 			startPos.Y.Scale,
 			startPos.Y.Offset + delta.Y
-		)
-
-		Frame.Position = clampFrame(newPos)
+		))
 	end
 end)
